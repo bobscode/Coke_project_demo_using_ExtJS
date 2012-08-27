@@ -6,6 +6,7 @@ Coca-Cola had need to represent their marketing/promotional events (from data on
 == Features:
 - has both view and edit modes, depending on role of users.
 - each widget (in the form of rectangular box) represents an event to schedule
+- events/widgets are categorized by section, then by row and dates
 - edit mode allows user to move/resize widgets according to # days/weeks 
 - business rules apply that widget cannot move to certain places, will snap back after notifying user of problem
 - if widget moved over another widget, both turn red indicating conflict in timing
@@ -15,6 +16,7 @@ Coca-Cola had need to represent their marketing/promotional events (from data on
                    - set locked/unlock ... saves, changes color, makes widget unable to be moved
                    - set reserve/unreserve ... saves, changes color, provides scheduled reminder of event
                    - see record, opens tab showing actual record in QB report format
+                   - create new row per category
 - holding bin on right side of page, to move widgets temporarily while arranging others
 - view mode features customization of user specified date range via jQuery calendar widget 
 
