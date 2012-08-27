@@ -1,7 +1,7 @@
 Coke_project_demo_using_ExtJS
 =============================
 
-Coca-Cola had need to represent their marketing/promotional events (from data on Quickbase) onto a calendar in order to streamline understanding and efficiency with their promotional planning department. Since off the shelf QB does not have a calander ui, I layered TreeGrid, a 3rd party ExtJS utility to meet Coke's needs. As illustrated in coke.gif, this project creates a calendar ui for reading/saving data on Quickbase upon each user action.
+Coca-Cola had need to represent their marketing/promotional events (from data on Quickbase) onto a calendar in order to streamline understanding and efficiency with their promotional planning department. Since off the shelf QB does not have a calander ui, I layered TreeGrid (a 3rd party utility based on ExtJS 4) to meet Coke's needs. As illustrated in coke.gif, this project creates a calendar ui for reading/saving data on Quickbase upon each user action.
 
 == Features:
 - has both view and edit modes, depending on role of users.
