@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Coke Calender View Assets</title> <!-- ** -->
+<link rel="stylesheet" href="https://qbscheduler.s3.amazonaws.com/Grid/Modern/Grid.css" type="text/css" media="screen"/>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+<script src="https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=45" type="text/javascript"></script>
+<script src="https://cokecbs.quickbase.com/js/QuickBaseClient.js" type="text/javascript"></script>
+<script src="https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=67" type="text/javascript"></script>
+<script src="https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=50" type="text/javascript"></script>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+
+<script type="text/javascript">
+
+
+(function($) {
+    $.fn.field = function(id) {
+        return this.find("f[id='" + id + "']").first().text();
+    };
+})(jQuery);
+
+// setup call into Qb using set security token
+function createClient() {
+    client = new QuickBaseClient("https://cokecbs.quickbase.com");		// **
+    client.apptoken = "";					// **
+    return client;
+}
+
+var dbid = ""; // assets table									// **
+
+var in_two_months = '';
+var two_weeks_ago = '';
+
+function get_sdate() {
+    var today = new Date();
+    var month = today.getMonth() + 1
+    var day = today.getDate()
+    var year = today.getFullYear();
+    
+    var epoch_two_weeks_ago = new Date().setDate(today.getDate()-14);
+    two_weeks_ago = new Date(epoch_two_weeks_ago);
+       
+    var default_date = two_weeks_ago.format('mm-dd-yyyy');
+    sdate = (default_date)
+    return sdate;
+}
+
+function get_edate() {
+    var today = new Date();
+    var month = today.getMonth() + 1
+    var day = today.getDate()
+    var year = today.getFullYear();
+    
+    var epoch_in_two_months = new Date().setDate(today.getDate()+56);
+    in_two_months = new Date(epoch_in_two_months);
+    var default_date = in_two_months.format('mm-dd-yyyy'); 
+    
+    
+    edate = (default_date)
+    return edate;
+}
+
+function convertDateToMillisec(date) {
+    return date.getFullYear()+date.getMonth()+date.getDate()+date.getHours()+date.getMinutes()+date.getSeconds()+date.getMilliseconds();
+}
+
+// get main data from QB into main grid
+function getData() {
+    var qid = "55";						// report to pull from Qb for main grid data read  **
+    var client = createClient();
+    
+    sdate=getUrlVars()['sdate'];
+    edate=getUrlVars()['edate'];
+    epochs=getUrlVars()['epochs'];
+    epoche=getUrlVars()['epoche'];
+
+    if(sdate == undefined && edate == undefined) {
+        sdate = get_sdate();
+        edate = get_edate();
+        epochs = two_weeks_ago.getTime();
+        epoche = in_two_months.getTime();
+    }
+    query ="((({'129'.XEX.''}AND{'130'.XEX.''}OR{'109'.XEX.'Media+Placements'}AND{'109'.XEX.'Catalog+Placements'})AND({'44'.XCT.'V01'}AND{'44'.XCT.'V02'}AND{'44'.XCT.'V09'})AND({'84'.XEX.''}OR{'14'.EX.'Footer'}OR{'14'.CT.'Promo'}))OR({'102'.EX.'AUX'}OR{'102'.EX.'Newsletter'}OR{'102'.EX.'SMS'})AND(({'11'.OAF.'"+sdate+"'}AND{'12'.OBF.'"+edate+"'})OR({'11'.OBF.'"+sdate+"'}AND{'12'.OAF.'"+sdate+"'}AND{'12'.OBF.'"+edate+"'})OR({'11'.OAF.'"+sdate+"'}AND{'11'.OBF.'"+edate+"'}AND{'12'.OAF.'"+edate+"'})OR({'11'.BF.'"+sdate+"'}AND{'12'.AF.'"+edate+"'})))"; //  REPLACED --> AND {'129'.XEX.''}AND{'130'.XEX.''} WITH --> {'109'.XEX.'Media+Placements'}AND{'109'.XEX.'Catalog+Placements'}
+ 
+    var records = client.DoQueryWithQueryString(dbid, query, '109.77.131.15.102.84.46.17.76.141.8.11.12.47.14.3.29.30.16.18.119.135.136.134', '109.14.102.11', 'so-AAAAAAA.gb-VVXXXXX');
+    
+    var assetGroupHeader='';
+    var groups = new Object();
+    // setup groups keyed array from db recs (each item is an Asset object - drill down via asset.js)
+    $("records > record", records).each(function(i, item) {
+        var a = new Asset(item);
+        if (!groups[a.location]) {
+            groups[a.location] = new Object();
+        }
+        if (!groups[a.location][a.getKey()]) {
+            groups[a.location][a.getKey()] = [];
+        }
+        groups[a.location][a.getKey()].push(a);
+        
+        var milliseconds=parseInt(a.startDate);
+        var millisecondse=parseInt(a.endDate);
+        
+        var d = new Date(milliseconds);
+        offset = d.getTimezoneOffset() * 60000;
+        UTCstart = milliseconds + parseInt(offset);
+        checks = new Date(UTCstart)
+        a.startDate = UTCstart;
+                
+        var e = new Date(millisecondse);
+        offsetE = e.getTimezoneOffset() * 60000;
+        UTCend = millisecondse + parseInt(offsetE);
+        checke = new Date(UTCend)
+        a.endDate = UTCend;
+    });
+    var headerArr = [];
+    
+    // work out headers for sections etc.
+    for (var l in groups) {
+        var headers = []
+        for (var k in groups[l]) {
+            headers.push(new AssetGrouping(groups[l][k]))
+            for(key in groups[l][k]) {
+                // hardcode 1325376000 (jan 1, 2012) & 1327968000 (jan 31, 2012) dates prompted by user
+                if(groups[l][k][key]['startDate']>=epochs && groups[l][k][key]['endDate']<=epoche) {} // assets that already fall within the specified date range
+                else { // truncate start and end dates of assets that overstep either boundary of specified date range
+                    if(groups[l][k][key]['startDate']<=epochs && groups[l][k][key]['endDate']<=epoche) {
+                        groups[l][k][key]['startDate'] = epochs;
+                    }
+                    if(groups[l][k][key]['startDate']>=epochs && groups[l][k][key]['endDate']>=epoche) {
+                        groups[l][k][key]['endDate'] = epoche;
+                    }
+                    if(groups[l][k][key]['startDate']<=epochs && groups[l][k][key]['endDate']>=epoche) { // oversteps both start and end date of prompted date so truncate both ends
+                        groups[l][k][key]['startDate'] = epochs;
+                        groups[l][k][key]['endDate'] = epoche;
+                        //console.log('found asset #'+groups[l][k][key]['recordId']+' and has start date of '+groups[l][k][key]['startDate']+'('+epochs+')'+' and end date of '+groups[l][k][key]['endDate']+'('+epoche+')')
+                    }
+                    assetGroupHeader = groups[l][k][key]['assetGroup']
+                }
+                
+            }
+        }
+        if(assetGroupHeader=='') {
+            console.log('no assetgroupheader');
+            var header = new AssetHeader(headers, l);
+        }
+        else var header = new AssetHeader(headers, l, assetGroupHeader);
+        headerArr.push(header);
+    }
+    var xml = "<Grid><Body><B>" + $.map(headerArr,
+            function(item, i) {
+                return item.toXMLString();
+            }).join("") + "</B></Body></Grid>"
+    // return with main Grid data setup wrapping HeaderArr to drive each line
+    return xml;
+}
+
+function setSDate(date) {
+    console.log(date)
+    window.lookupPSDate=Date.parse(parseDate(date,'mm-dd-yyyy'));
+    window.lookupSDate=date;
+}
+function setEDate(date) {
+    window.lookupEDate=date;
+    window.lookupPEDate=Date.parse(parseDate(date,'mm-dd-yyyy'));
+    location.replace('https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=60&sdate='+window.lookupSDate+'&edate='+window.lookupEDate+'&epochs='+window.lookupPSDate+'&epoche='+window.lookupPEDate);
+}
+
+
+  
+jQuery(document).ready(function($) {
+    $(function() {
+        $( "#start_date_picker" ).datepicker({ dateFormat: 'mm-dd-yy'});
+        $( "#format" ).change(function() {
+            $( "#start_date_picker" ).datepicker( "option", "dateFormat", $( this ).val() );
+        });
+    });
+    $(function() {
+        $( "#end_date_picker" ).datepicker({ dateFormat: 'mm-dd-yy'});
+        $( "#format" ).change(function() {
+            $( "#end_date_picker" ).datepicker( "option", "dateFormat", $( this ).val() );
+        });
+    }); 
+    
+
+    Grids.OnDataReceive = function(grid, source) {
+        //console.log('Received data');
+    }
+
+
+    //from http://stackoverflow.com/questions/280634/endswith-in-javascript
+    String.prototype.endsWith = function(str) {
+        var lastIndex = this.lastIndexOf(str);
+        return (lastIndex != -1) && (lastIndex + str.length == this.length);
+    }
+
+    Grids.OnTestConstraints = function(grid, row, col, type, change, d1, d2) {
+        alert(d1 + ' is start date?');
+    }
+    
+    Grids.OnDataGet = function(g, source, data, io) {
+        if (source.Name == "Data") {  // for main grid
+            return getData();
+        }
+        return data;
+    }  
+
+
+    a = new TreeGrid({
+        Sync: 0,
+        Text:         {Url: "https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=46" },     // ** pre-v4 was 60
+        Defaults:     {Url: "https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=59"},     // ** pre-v4 was 61
+        Data:         {Url: "https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=48"},     // ** pre-v4 was 66
+        Upload:     {Url: "https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=48"},     // ** pre-v4 was 66
+        Layout:     {Url: "https://cokecbs.quickbase.com/db/berwdqfj2?a=dbpage&pageID=61"}         // ** pre-v4 was 63
+    }, "main")
+
+
+
+})  // end of JQuery doc ready
+
+
+</script>
+
+</head>
+<body>
+<table style='width:100%;  height:100%;'>
+    <tr>
+        <td colspan='2' valign='top'>
+            <div id='calendar_block' style='width:100%; font-family: Verdana, Tahoma, Helvetica, Arial; font-size:13px; margin-top:0px; height:40px;'>
+             Once calendar loads, you may select a date range to view: <br />
+             From: <input type="text" name="start_date" size=15 id="start_date_picker" onchange="setSDate(this.value)">&nbsp;&nbsp;
+             To: &nbsp;&nbsp;
+                <input type="text" name="end_date" size=15 id="end_date_picker" onchange="setEDate(this.value);"> <!-- Grids.OnDataGet('change'); -->
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td style='width:100%; height:100%;' valign='top'>
+            <div id='main' style='width:100%; margin-top:0px; height:100%;'>
+            </div>
+        </td>
+        </tr>
+    
+</table>
+
+</body>
+</html>
